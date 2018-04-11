@@ -1,5 +1,33 @@
 #include <bits/stdc++.h>
 using namespace std;
+template<typename T>
+T randVar(T n)
+{
+    return rand()%n;
+}
+template<typename T,typename P>
+T randVar(T a,P b)
+{
+    if(b < a)
+    {
+        cout << "ERROR : IN randVar(int a,int b) IN RANDOMIZE.cpp" << endl;
+        cout << "a > b" << endl;
+        exit(0);
+    }
+    if(a < 0)
+    {
+        if(b-a == 0)
+            return a + randVar(-a);
+        else
+            return randVar(b - a + 1) + a;
+    }
+    if(a == 0 && b == 0)
+        return 0;
+    if(b-a == 0)
+        return a;
+    else
+        return randVar(b - a + 1) + a;
+}
 class Node {
 private:
     double range;
@@ -46,6 +74,7 @@ public:
         generateRandomPoints();
         for (int i = 0; i < numberOfpoints; ++i)
             matrix.push_back(vector<int>());
+        adjacencyMatrixCreation();
     }
     int getNumberOfPoints()
     {
