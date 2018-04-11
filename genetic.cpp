@@ -60,7 +60,8 @@ class Topology {
     int windowXCoord;
     int windowYCoord;
     int numberOfBaseStation;
-    const int MAX_RANGE = 40;
+    const int MIN_RANGE = 20;
+    const int MAX_RANGE = 50;
     vector< Node > sensors;
     set< pair<int,int> > points;
 public:
@@ -123,7 +124,7 @@ public:
                 y = randVar(0,windowYCoord);
             }while(points.find(make_pair(x,y)) != points.end());
             points.insert(make_pair(x,y));
-            int range = rand()%MAX_RANGE;
+            int range = randVar(MIN_RANGE,MAX_RANGE);
             sensors.push_back(Node(make_pair(x,y),range));
         }
     }
@@ -134,7 +135,7 @@ class Cromosome
     Topology *center;
     unordered_set<int> bag;
     vector< int > baseStations;
-    double cost;
+    long long int cost;
     const int MAX_MUTATIONS = 1;
     /**
      * Base stations should be more than 1
@@ -151,11 +152,11 @@ public:
                 baseStations.push_back(newIndex);
             }
         }
-        cost = 1;
+        cost = 1e18;
     }
     Cromosome()
     {
-        cost = 1;
+        cost = 1e18;
     }
     void operator=(Cromosome &otherCrom)
     {
@@ -206,14 +207,14 @@ public:
             baseStations[index] = newIndex;
         }
     }
-    double getCost()
+    long long int getCost()
     {
         return cost;
     }
-    double evaluate()
+    long long int evaluate()
     {
         cost = 0;
-        int distances[center->getNumberOfPoints()];
+        long long int distances[center->getNumberOfPoints()];
         for(int i = 0;i < center->getNumberOfPoints();i++)
             distances[i] = INT_MAX;
         for(auto station : baseStations)
@@ -222,15 +223,15 @@ public:
             {
                 if(center->matrix[station][i])
                 {
-                    int dist = center->dist(station,i);
+                    long long int dist = center->dist(station,i);
                     distances[i] = min(dist,distances[i]);
                 }
             }
         }
-        long int dist = 0;
+        long long int dist = 0;
         for(int i = 0;i < center->getNumberOfPoints();i++)
             dist = dist + distances[i];
-        cost = ((1.0*dist)/INT_MAX);
+        cost = dist;
         return cost;
     }
     void print()
@@ -262,16 +263,16 @@ void genetic(int populationSize,int numberOfRounds)
     vector< Cromosome* > population;
     for (int i = 0; i < populationSize; ++i)
         population.push_back(new Cromosome(tj));
-    Cromosome *best = new Cromosome(tj);
-    best->print();
+    Cromosome best(tj);
+    best.print();
     for (int i = 0; i < numberOfRounds; ++i)
     {
         cout << "Round Number : " << (i+1) << endl;
         for (int i = 0; i < populationSize; ++i)
             population[i]->evaluate();
         sort(population.begin(), population.end(), comp);
-        if(best->getCost() > population[0]->getCost())
-            best = population[0];
+        if(best.getCost() > population[0]->getCost())
+            best = (*population[0]);
         int best30 = (populationSize*30)/100;
         int random20 = (populationSize*20)/100;
         vector< Cromosome* > newPopulation;
@@ -292,12 +293,13 @@ void genetic(int populationSize,int numberOfRounds)
         }
         population.clear();
         population = newPopulation;
-        best->print();
+        best.print();
     }
 }
 int main(int argc, char const *argv[])
 {
     ios_base::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
-    genetic(100,20);
+    cout << "Starting Program" << endl;
+    genetic(50,50);
     return 0;
 }
