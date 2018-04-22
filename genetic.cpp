@@ -1,6 +1,3 @@
-#include "/home/anurag/desktop/program/codeForces/templates/MYLIB.cpp"
-// #include "/home/anurag/desktop/program/codeForces/templates/RANDOMIZE.cpp"
-// #include "/home/anurag/desktop/program/codeForces/templates/TEST.cpp"
 #include <bits/stdc++.h>
 using namespace std;
 template<typename T>
