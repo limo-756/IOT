@@ -1,3 +1,6 @@
+#include "/home/anurag/desktop/program/codeForces/templates/MYLIB.cpp"
+// #include "/home/anurag/desktop/program/codeForces/templates/RANDOMIZE.cpp"
+// #include "/home/anurag/desktop/program/codeForces/templates/TEST.cpp"
 #include <bits/stdc++.h>
 using namespace std;
 template<typename T>
@@ -10,7 +13,7 @@ T randVar(T a,P b)
 {
     if(b < a)
     {
-        cout << "ERROR : IN randVar(int a,int b) IN RANDOMIZE.cpp" << endl;
+        cout << "ERROR : IN randVar(int a,int b)" << endl;
         cout << "a > b" << endl;
         exit(0);
     }
@@ -54,6 +57,10 @@ public:
     {
         this->range = range;
     }
+    void print()
+    {
+        cout << "(" << coord.first << "," << coord.second << ")" << " range : " << range << endl;
+    }
 };
 class Topology {
     int numberOfpoints;
@@ -62,10 +69,28 @@ class Topology {
     int numberOfBaseStation;
     const int MIN_RANGE = 20;
     const int MAX_RANGE = 50;
-    vector< Node > sensors;
     set< pair<int,int> > points;
 public:
+    vector< Node > sensors;
     vector< vector<int> > matrix;
+    Topology(int numberOfpoints,int numberOfBaseStation,vector<Node> sensorCoord)
+    {
+        this->numberOfpoints = numberOfpoints;
+        this->numberOfBaseStation = numberOfBaseStation;
+        this->sensors = sensorCoord;
+        for (int i = 0; i < numberOfpoints; ++i)
+        {
+            matrix.push_back(vector<int>());
+            for (int j = 0; j < numberOfpoints; ++j)
+                matrix[i].push_back(0);
+        }
+        adjacencyMatrixCreation();
+        for (int i = 0; i < numberOfpoints; ++i)
+        {
+            cout << (i+1);
+            sensors[i].print();
+        }
+    }
     Topology(int numberOfpoints,int numberOfBaseStation,int windowXCoord,int windowYCoord)
     {
         this->numberOfpoints = numberOfpoints;
@@ -80,6 +105,15 @@ public:
                 matrix[i].push_back(0);
         }
         adjacencyMatrixCreation();
+        for (int i = 0; i < numberOfpoints; ++i)
+        {
+            cout << (i+1);
+            sensors[i].print();
+        }
+    }
+    int getNumberOfBaseStation()
+    {
+        return numberOfBaseStation;
     }
     int getNumberOfPoints()
     {
@@ -111,6 +145,7 @@ public:
                 if(dist(i,j) <= sensors[j].getRange())
                     matrix[j][i] = 1;
             }
+            matrix[i][i] = 1;
         }
     }
     void generateRandomPoints()
@@ -129,7 +164,7 @@ public:
         }
     }
 };
-const int MAX_BASE_STATIONS = 3;
+const int MAX_BASE_STATIONS = 1;
 class Cromosome
 {
     Topology *center;
@@ -191,20 +226,34 @@ public:
     }
     void mutation()
     {
-        int num = randVar(1,MAX_MUTATIONS);
-        for (int i = 0; i < num; ++i)
+        if(getNumberOfBaseStation() == 1)
         {
-            int index = randVar(0,baseStations.size() - 1);
-            int newIndex;
-            while(true)
+            int index;
+            do
             {
-                newIndex = randVar(0,center->getNumberOfPoints() - 1);
-                if(bag.find(newIndex) == bag.end())
-                    break;
+                index = randVar(0,center->getNumberOfPoints() - 1);
+            } while (bag.find(index) == bag.end());
+            bag.erase(baseStations[0]);
+            bag.insert(index);
+            baseStations[0] = index;
+        }
+        else
+        {
+            int num = randVar(1,MAX_MUTATIONS);
+            for (int i = 0; i < num; ++i)
+            {
+                int index = randVar(0,baseStations.size() - 1);
+                int newIndex;
+                while(true)
+                {
+                    newIndex = randVar(0,center->getNumberOfPoints() - 1);
+                    if(bag.find(newIndex) == bag.end())
+                        break;
+                }
+                bag.erase(baseStations[index]);
+                bag.insert(newIndex);
+                baseStations[index] = newIndex;
             }
-            bag.erase(baseStations[index]);
-            bag.insert(newIndex);
-            baseStations[index] = newIndex;
         }
     }
     long long int getCost()
@@ -234,12 +283,19 @@ public:
         cost = dist;
         return cost;
     }
+    int getNumberOfBaseStation()
+    {
+        return center->getNumberOfBaseStation();
+    }
     void print()
     {
         cout << "PRINTING THE CROMOSOME" << endl;
         cout << "cost is " << cost << endl;
         for(auto station : baseStations)
+        {
             cout << station << " ";
+            center->sensors[station].print();
+        }
         cout << endl;
     }
 };
@@ -247,9 +303,20 @@ Cromosome* crossOver(Cromosome *parent1,Cromosome *parent2)
 {
     Cromosome *res = new Cromosome();
     res->setCenter(parent1->getCenter());
-    int num = randVar(1 ,MAX_BASE_STATIONS/2);
-    res->copy(num,parent1);
-    res->copy(MAX_BASE_STATIONS,parent2);
+    if(parent1->getNumberOfBaseStation())
+    {
+        int num = randVar(0,1);
+        if(num == 0)
+            res->copy(1,parent1);
+        else
+            res->copy(1,parent2);
+    }
+    else
+    {
+        int num = randVar(1 ,MAX_BASE_STATIONS/2);
+        res->copy(num,parent1);
+        res->copy(MAX_BASE_STATIONS,parent2);
+    }
     return res;
 }
 bool comp(Cromosome *a,Cromosome *b)
@@ -259,11 +326,22 @@ bool comp(Cromosome *a,Cromosome *b)
 void genetic(int populationSize,int numberOfRounds)
 {
     cout << "Genetic Algo Started" << endl;
-    Topology *tj = new Topology(50,5,100,100);
+    // Topology *tj = new Topology(50,5,100,100);
+    vector<Node> vec;
+    vec.push_back(Node(make_pair(0,0),10));
+    vec.push_back(Node(make_pair(10,0),10));
+    vec.push_back(Node(make_pair(0,10),10));
+    vec.push_back(Node(make_pair(-10,0),10));
+    vec.push_back(Node(make_pair(0,-10),10));
+    Topology *tj = new Topology(5,1,vec);
     vector< Cromosome* > population;
     for (int i = 0; i < populationSize; ++i)
+    {
         population.push_back(new Cromosome(tj));
+        // population[i]->print();
+    }
     Cromosome best(tj);
+    best.evaluate();
     best.print();
     for (int i = 0; i < numberOfRounds; ++i)
     {
@@ -300,6 +378,6 @@ int main(int argc, char const *argv[])
 {
     ios_base::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
     cout << "Starting Program" << endl;
-    genetic(50,50);
+    genetic(5,5);
     return 0;
 }
